@@ -59,6 +59,10 @@ function M.setup(opts)
     vim.keymap.set('n', config.options.keymaps.clear, M.clear_output, { desc = 'Clear Shifty output' })
   end
   
+  if config.options.keymaps.close then
+    vim.keymap.set('n', config.options.keymaps.close, M.close, { desc = 'Close Shifty window' })
+  end
+  
   state.initialized = true
   utils.log("Shifty initialized successfully", "info")
 end

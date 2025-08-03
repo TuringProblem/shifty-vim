@@ -10,7 +10,11 @@ end
 
 -- Create the main Shifty command
 vim.api.nvim_create_user_command('Shifty', function(opts)
-    local shifty = require('shifty')
+    local success, shifty = pcall(require, 'shifty')
+    if not success then
+      vim.api.nvim_err_writeln('Shifty plugin not loaded. Run :lua require("shifty").setup() first.')
+      return
+    end
     
     if opts.args == 'toggle' or opts.args == '' then
       shifty.toggle()
