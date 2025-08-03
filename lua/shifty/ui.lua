@@ -108,6 +108,7 @@ function M.update_output(win, result, block_identifier)
 	table.insert(lines, "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	table.insert(
 		lines,
+		""
 		-- "Place cursor in ```lua block and press " .. (config.get("keymaps.run") or "<leader>sr") .. " to execute"
 	)
 
