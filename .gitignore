@@ -39,3 +39,14 @@ luac.out
 *.x86_64
 *.hex
 
+# Neovim plugin development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+/tmp/
+*.tmp
+

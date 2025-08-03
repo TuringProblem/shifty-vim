@@ -1,11 +1,11 @@
 local M = {}
 
-local config = require('andrew.plugins.custom.shifty.config')
-local parser = require('andrew.plugins.custom.shifty.parser')
-local proxy = require('andrew.plugins.custom.shifty.proxy')
-local ui = require('andrew.plugins.custom.shifty.ui')
-local utils = require('andrew.plugins.custom.shifty.utils')
-local languages = require('andrew.plugins.custom.shifty.languages')
+local config = require('shifty.config')
+local parser = require('shifty.parser')
+local proxy = require('shifty.proxy')
+local ui = require('shifty.ui')
+local utils = require('shifty.utils')
+local languages = require('shifty.languages')
 
 ---@type {initialized: boolean, floating_win: number, current_output: string, history: {code: string, result: string, timestamp: string, line: number}[]}
 local state = {
@@ -66,7 +66,7 @@ end
 ---@return void
 function M.toggle()
   if not state.initialized then
-    utils.log("Shifty not initialized. Run :lua require('andrew.plugins.custom.shifty').setup()", "error")
+    utils.log("Shifty not initialized. Run :lua require('shifty').setup()", "error")
     return
   end
   

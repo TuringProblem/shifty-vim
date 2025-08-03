@@ -1,32 +1,11 @@
 local M = {}
 
--- Try to load modules with fallback paths for different package managers
-local function safe_require(module_name, fallback_paths)
-    local success, module = pcall(require, module_name)
-    if success then
-        return module
-    end
-    
-    -- Try fallback paths if provided
-    if fallback_paths then
-        for _, path in ipairs(fallback_paths) do
-            success, module = pcall(require, path)
-            if success then
-                return module
-            end
-        end
-    end
-    
-    error("Failed to load module: " .. module_name)
-end
-
--- Load modules with fallback paths for different package manager structures
-local config = safe_require('config', {'shifty.config'})
-local parser = safe_require('parser', {'shifty.parser'})
-local proxy = safe_require('proxy', {'shifty.proxy'})
-local ui = safe_require('ui', {'shifty.ui'})
-local utils = safe_require('utils', {'shifty.utils'})
-local languages = safe_require('languages', {'shifty.languages'})
+local config = require('shifty.config')
+local parser = require('shifty.parser')
+local proxy = require('shifty.proxy')
+local ui = require('shifty.ui')
+local utils = require('shifty.utils')
+local languages = require('shifty.languages')
 
 ---@type {initialized: boolean, floating_win: number, current_output: string, history: {code: string, result: string, timestamp: string, line: number}[]}
 local state = {
@@ -54,12 +33,26 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('ShiftyClose', M.close, {})
   vim.api.nvim_create_user_command('ShiftyInfo', M.show_info, {})
   
+  -- Register keymaps
   if config.options.keymaps.toggle then
     vim.keymap.set('n', config.options.keymaps.toggle, M.toggle, { desc = 'Toggle Shifty window' })
   end
   
   if config.options.keymaps.run then
     vim.keymap.set('n', config.options.keymaps.run, M.run_current_block, { desc = 'Run current code block' })
+  end
+  
+  -- New hybrid keymaps
+  if config.options.keymaps.smart then
+    vim.keymap.set('n', config.options.keymaps.smart, M.run_smart, { desc = 'Smart execute (selection/block/context)' })
+  end
+  
+  if config.options.keymaps.selection then
+    vim.keymap.set('v', config.options.keymaps.selection, M.run_selection, { desc = 'Execute selected code' })
+  end
+  
+  if config.options.keymaps.context then
+    vim.keymap.set('n', config.options.keymaps.context, M.run_context, { desc = 'Execute current line/context' })
   end
   
   if config.options.keymaps.clear then
@@ -91,6 +84,7 @@ function M.open()
   utils.log("Shifty window opened", "info")
 end
 
+
 ---@return void
 function M.close()
   if state.floating_win and vim.api.nvim_win_is_valid(state.floating_win) then
@@ -116,8 +110,54 @@ function M.run_current_block()
   M.execute_code(code_block.code, code_block)
 end
 
+-- New hybrid execution function
+---@return void
+function M.run_smart()
+  local current_buf = vim.api.nvim_get_current_buf()
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  
+  local code_info = parser.extract_code_smart(current_buf, cursor_pos[1])
+  
+  if not code_info then
+    utils.log("No code found to execute. Try selecting code or placing cursor in a code block.", "warn")
+    return
+  end
+  
+  M.execute_code(code_info.code, code_info)
+end
+
+-- Execute selected code (visual mode)
+---@return void
+function M.run_selection()
+  local current_buf = vim.api.nvim_get_current_buf()
+  local code_info = parser.extract_selected_code(current_buf)
+  
+  if not code_info then
+    utils.log("No text selected. Select code in visual mode first.", "warn")
+    return
+  end
+  
+  M.execute_code(code_info.code, code_info)
+end
+
+-- Execute current line/context
+---@return void
+function M.run_context()
+  local current_buf = vim.api.nvim_get_current_buf()
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  
+  local code_info = parser.extract_context_code(current_buf, cursor_pos[1])
+  
+  if not code_info then
+    utils.log("No executable code found at cursor position.", "warn")
+    return
+  end
+  
+  M.execute_code(code_info.code, code_info)
+end
+
 ---@param code string
----@param block_info {start_line: number, language: string}
+---@param block_info {start_line: number, language: string, source?: string}
 ---@return void
 function M.execute_code(code, block_info)
   if not state.floating_win or not vim.api.nvim_win_is_valid(state.floating_win) then
@@ -125,9 +165,20 @@ function M.execute_code(code, block_info)
   end
   
   local language = block_info.language or "lua"
-  local block_name = string.format("%s block (line %d)", language, block_info.start_line or 0)
+  local source = block_info.source or "unknown"
   
-  -- Execute through proxy system
+  -- Create descriptive block name based on source
+  local block_name
+  if source == "selection" then
+    block_name = string.format("%s selection (lines %d-%d)", language, block_info.start_line, block_info.end_line)
+  elseif source == "fenced_block" then
+    block_name = string.format("%s block (line %d)", language, block_info.start_line)
+  elseif source == "context_line" then
+    block_name = string.format("%s line %d", language, block_info.start_line)
+  else
+    block_name = string.format("%s code (line %d)", language, block_info.start_line or 0)
+  end
+  
   local result = proxy.execute_code({
     language = language,
     code = code,
@@ -143,14 +194,15 @@ function M.execute_code(code, block_info)
     result = result,
     timestamp = os.date("%H:%M:%S"),
     line = block_info.start_line,
-    language = language
+    language = language,
+    source = source
   })
   
   state.current_output = result.output
   ui.update_output(state.floating_win, result, block_name)
   
-  utils.log(string.format("Executed %s block at line %d - %s", 
-           language, block_info.start_line or 0, result.success and "SUCCESS" or "ERROR"), 
+  utils.log(string.format("Executed %s %s at line %d - %s", 
+           language, source, block_info.start_line or 0, result.success and "SUCCESS" or "ERROR"), 
            result.success and "info" or "error")
 end
 
@@ -236,21 +288,6 @@ function M.show_info()
   vim.keymap.set('n', 'q', function()
     vim.api.nvim_win_close(win, true)
   end, { buffer = buf, noremap = true })
-end
-
--- Placeholder functions for backward compatibility
-function M.run_smart()
-  M.run_current_block()
-end
-
-function M.run_selection()
-  -- TODO: Implement selection-based execution
-  utils.log("Selection-based execution not yet implemented", "warn")
-end
-
-function M.run_context()
-  -- TODO: Implement context-based execution
-  utils.log("Context-based execution not yet implemented", "warn")
 end
 
 return M 

@@ -1,6 +1,6 @@
 local M = {}
-local utils = require('andrew.plugins.custom.shifty.utils')
-local config = require('andrew.plugins.custom.shifty.config')
+local utils = require('shifty.utils')
+local config = require('shifty.config')
 
 -- Captured output storage
 local captured_output = {}

@@ -8,6 +8,7 @@ if vim.fn.has('nvim-0.7.0') ~= 1 then
     return
 end
 
+-- Create the main Shifty command
 vim.api.nvim_create_user_command('Shifty', function(opts)
     local shifty = require('shifty')
     
@@ -19,14 +20,16 @@ vim.api.nvim_create_user_command('Shifty', function(opts)
       shifty.clear_output()
     elseif opts.args == 'close' then
       shifty.close()
+    elseif opts.args == 'info' then
+      shifty.show_info()
     else
       print('Unknown command: ' .. opts.args)
-      print('Available commands: toggle, run, clear, close')
+      print('Available commands: toggle, run, clear, close, info')
     end
   end, {
     nargs = '?',
     complete = function()
-      return {'toggle', 'run', 'clear', 'close'}
+      return {'toggle', 'run', 'clear', 'close', 'info'}
     end,
-    desc = 'Shifty HOT compiler commands'
-  })
+    desc = 'Shifty Multi-Language REPL commands'
+  }) 
