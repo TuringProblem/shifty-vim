@@ -143,6 +143,13 @@ require("shifty").setup({
       args = {},
       timeout = 2000,
     },
+    java = {
+      command = "javac",
+      args = {"-d", "/tmp"},
+      run_command = "java",
+      run_args = {"-cp", "/tmp"},
+      timeout = 10000,
+    },
     rust = {
       command = "rustc",
       args = {"-o", "/tmp/rust_out", "-"},
@@ -169,7 +176,7 @@ require("shifty").setup({
 - **JavaScript** (`javascript`, `js`, `node`)
 - **Lua** (`lua`)
 - **Rust** (`rust`, `rs`)
-- **Java** (`java`)
+- **Java** (`java`, `javac`)
 - **C** (`c`, `cc`, `cpp`)
 - **Shell** (`bash`, `sh`, `zsh`)
 

@@ -30,6 +30,12 @@ fn main() {
 }
 ```
 
+### Java Test
+```java
+System.out.println("Hello from Java!");
+System.out.println("Java version: " + System.getProperty("java.version"));
+```
+
 ## Alternative Code Block Formats
 
 ### With Language Aliases
@@ -45,6 +51,10 @@ console.log("JavaScript with 'js' alias");
 fn main() {
     println!("Rust with 'rs' alias");
 }
+```
+
+```java
+System.out.println("Java with 'java' alias");
 ```
 
 ### With No Language Specified
@@ -135,6 +145,17 @@ test().then(console.log);
 ```lua
 local t = {name = "Lua", version = _VERSION}
 print(string.format("Language: %s, Version: %s", t.name, t.version))
+```
+
+### Java with Classes
+```java
+public class TestClass {
+    public static void main(String[] args) {
+        String language = "Java";
+        String version = System.getProperty("java.version");
+        System.out.println("Language: " + language + ", Version: " + version);
+    }
+}
 ```
 
 ## Testing Instructions

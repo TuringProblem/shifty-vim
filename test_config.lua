@@ -42,6 +42,13 @@ local function test_shifty()
           args = {},
           timeout = 2000,
         },
+        java = {
+          command = "javac",
+          args = {"-d", "/tmp"},
+          run_command = "java",
+          run_args = {"-cp", "/tmp"},
+          timeout = 10000,
+        },
       },
       execution = {
         timeout = 5000,
