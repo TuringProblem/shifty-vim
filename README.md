@@ -1,4 +1,48 @@
+<div align="center">
+
+<img width="320" height="320" alt="shifty-vim" src="https://github.com/user-attachments/assets/849a7a59-4900-402e-b6c6-0dce3580686b" />
+
 # Shifty - Multi-Language REPL for Neovim
+
+![Static Badge](https://img.shields.io/badge/SHIFTY-VIM-%23632CA6?style=for-the-badge&logo=lua&logoColor=%23632CA6&labelColor=%23fff)
+![GitHub stars](https://img.shields.io/github/stars/TuringProblem/shifty-vim?style=for-the-badge&logo=github)
+![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=for-the-badge&logo=gnu)
+![Shell](https://img.shields.io/badge/Shell-121011?style=for-the-badge&logo=gnu-bash&logoColor=white)
+
+</div>
+
+> A powerful multi-language REPL (Read-Eval-Print Loop) plugin for Neovim that allows you to execute code blocks in various programming languages directly from your editor.
+
+## 📖 Table of Contents
+
+- [Current Language Support](#-current-language-support)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Commands](#commands)
+  - [Keymaps](#keymaps)
+  - [Code Block Detection](#code-block-detection)
+- [Configuration](#configuration)
+- [Supported Languages](#supported-languages)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+<div align="center">
+
+  ## ***Current Language Support:***
+
+  
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
+
+</div>
 
 A powerful multi-language REPL (Read-Eval-Print Loop) plugin for Neovim that allows you to execute code blocks in various programming languages directly from your editor.
 
@@ -212,4 +256,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the GPL-3.0 License - see the LICENSE file for details.
