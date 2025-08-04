@@ -3,42 +3,35 @@ local M = {}
 local base = require("shifty.languages.base")
 local utils = require("shifty.utils")
 
--- Language metadata
 local metadata = {
 	name = "c",
 	version = "1.0.0",
 	file_extensions = { ".c", ".h" },
-	executable_check = "gcc --version", -- Will be updated during setup
+	executable_check = "gcc --version",
 	aliases = { "c", "gcc", "clang" },
 }
 
--- Create the C language module
 local function create_c_module(config)
 	config = config or {}
 
 	local module = base.create_base_module(metadata, config)
 
-	-- Override execute_code with C-specific implementation
 	module.execute_code = function(code, context)
 		return M.execute_c_code(module, code, context)
 	end
 
-	-- Override setup_environment with C-specific setup
 	module.setup_environment = function(config)
 		return M.setup_c_environment(module, config)
 	end
 
-	-- Override get_capabilities with C-specific capabilities
 	module.get_capabilities = function()
 		return M.get_c_capabilities(module)
 	end
 
-	-- Override health_check with C-specific health check
 	module.health_check = function()
 		return M.health_check_c(module)
 	end
 
-	-- Override cleanup with C-specific cleanup
 	module.cleanup = function()
 		return M.cleanup_c(module)
 	end
@@ -46,23 +39,20 @@ local function create_c_module(config)
 	return module
 end
 
--- Validate C code semantics
 ---@param code string The C code to validate
 ---@return boolean valid Whether the code is semantically valid
----@return string|nil error Error message if invalid
+---@return string error Error message if invalid
 ---@return table suggestions Suggestions for fixing the code
 
 function M.validate_c_semantics(code)
 	local suggestions = {}
 	local warnings = {}
 
-	-- Check for required elements
 	if not code:match("int%s+main%s*%(") and not code:match("void%s+main%s*%(") then
 		table.insert(suggestions, "Add 'int main()' function as entry point")
 		table.insert(warnings, "No main function found")
 	end
 
-	-- Common header validation
 	local common_headers_v2 = {
 		["#include <stdio.h>"] = {
 			scanf = true,
@@ -136,7 +126,6 @@ function M.execute_c_code(module, code, context)
 		metadata = {},
 	}
 
-	-- Validate code
 	local valid, error_msg = base.validate_code(code, "c")
 	if not valid then
 		result.error = error_msg
@@ -144,19 +133,16 @@ function M.execute_c_code(module, code, context)
 		return result
 	end
 
-	-- Check if environment is ready
 	if not module.environment.ready then
 		result.error = "C environment not ready"
 		result.output = result.error
 		return result
 	end
 
-	-- Validate C semantics
 	local semantically_valid, semantic_error, suggestions = M.validate_c_semantics(code)
 
 	local start_time = vim.loop.hrtime()
 
-	-- Create temporary files
 	local temp_c_file = os.tmpname() .. ".c"
 	local temp_exe_file = os.tmpname()
 
@@ -167,11 +153,9 @@ function M.execute_c_code(module, code, context)
 		return result
 	end
 
-	-- Write code to file
 	file:write(code)
 	file:close()
 
-	-- Compile the C code
 	local compile_command = string.format("%s -o %s %s", module.environment.compiler, temp_exe_file, temp_c_file)
 	local compile_output = vim.fn.system(compile_command)
 	local compile_success = vim.v.shell_error == 0
@@ -181,7 +165,6 @@ function M.execute_c_code(module, code, context)
 		result.error = "Compilation failed"
 		result.output = "Compilation Error:\n" .. compile_output
 
-		-- Add semantic suggestions if compilation failed
 		if not semantically_valid and #suggestions > 0 then
 			result.output = result.output .. "\n\n💡 Suggestions:\n"
 			for _, suggestion in ipairs(suggestions) do
@@ -189,20 +172,17 @@ function M.execute_c_code(module, code, context)
 			end
 		end
 
-		-- Clean up
 		os.remove(temp_c_file)
 		return result
 	end
 
-	-- Execute the compiled program
 	local exec_command = temp_exe_file
 	local exec_output = vim.fn.system(exec_command)
 	local exec_success = vim.v.shell_error == 0
 
 	local end_time = vim.loop.hrtime()
-	result.execution_time = (end_time - start_time) / 1000000 -- Convert to milliseconds
+	result.execution_time = (end_time - start_time) / 1000000
 
-	-- Clean up temporary files
 	os.remove(temp_c_file)
 	os.remove(temp_exe_file)
 
@@ -210,7 +190,6 @@ function M.execute_c_code(module, code, context)
 		result.success = true
 		result.output = exec_output
 
-		-- Remove trailing newlines
 		result.output = result.output:gsub("\n*$", "")
 
 		if result.output == "" then
@@ -233,7 +212,6 @@ function M.execute_c_code(module, code, context)
 		result.output = "Runtime Error:\n" .. exec_output
 	end
 
-	-- Add semantic warnings even if successful
 	if not semantically_valid and #suggestions > 0 then
 		result.output = result.output .. "\n\n⚠️  Warnings:\n"
 		for _, suggestion in ipairs(suggestions) do
@@ -244,14 +222,12 @@ function M.execute_c_code(module, code, context)
 	return result
 end
 
--- Setup C environment
 ---@param module BaseLanguageModule The language module
 ---@param config table Configuration for environment setup
 ---@return boolean success Whether setup was successful
 function M.setup_c_environment(module, config)
 	config = config or {}
 
-	-- Detect available C compilers
 	local compilers = {
 		{ name = "gcc", check = "gcc --version", version_pattern = "gcc %(([^%)]+)%) ([%d%.]+)" },
 		{ name = "clang", check = "clang --version", version_pattern = "clang version ([%d%.]+)" },
@@ -261,7 +237,6 @@ function M.setup_c_environment(module, config)
 	local selected_compiler = nil
 	local compiler_version = nil
 
-	-- Try to find an available compiler
 	for _, compiler in ipairs(compilers) do
 		if vim.fn.executable(compiler.name) == 1 then
 			local version_output = vim.fn.system(compiler.check)
@@ -280,21 +255,17 @@ function M.setup_c_environment(module, config)
 		return false
 	end
 
-	-- Update metadata for the detected compiler
 	module.metadata.executable_check = selected_compiler .. " --version"
 
-	-- Call base setup with updated metadata
 	local base_success = base.setup_environment(module, config)
 	if not base_success then
 		return false
 	end
 
-	-- Set up C-specific environment
 	module.environment.compiler_name = selected_compiler
 	module.environment.compiler_version = compiler_version
 	module.environment.compiler = config.compiler or selected_compiler
 
-	-- Set appropriate flags based on compiler
 	if selected_compiler == "clang" then
 		module.environment.flags = config.flags or "-Wall -Wextra -std=c99"
 		module.environment.optimization = config.optimization or "-O0"
@@ -307,7 +278,6 @@ function M.setup_c_environment(module, config)
 	return true
 end
 
--- Get C capabilities
 ---@param module BaseLanguageModule The language module
 ---@return table capabilities The C capabilities
 function M.get_c_capabilities(module)
@@ -326,21 +296,17 @@ function M.get_c_capabilities(module)
 	})
 end
 
--- Health check for C
 ---@param module BaseLanguageModule The language module
 ---@return boolean healthy Whether C is healthy
 function M.health_check_c(module)
-	-- Call base health check first
 	if not base.health_check(module) then
 		return false
 	end
 
-	-- Check C-specific health
 	if not module.environment.compiler_version then
 		return false
 	end
 
-	-- Test basic C compilation
 	local test_code = [[
 #include <stdio.h>
 int main() {
@@ -364,7 +330,6 @@ int main() {
 	local compile_success = vim.fn.system(compile_command)
 	local success = vim.v.shell_error == 0
 
-	-- Clean up
 	os.remove(temp_file)
 	if success then
 		os.remove(temp_exe)
@@ -373,13 +338,10 @@ int main() {
 	return success
 end
 
--- Cleanup C environment
 ---@param module BaseLanguageModule The language module
 function M.cleanup_c(module)
-	-- Call base cleanup
 	base.cleanup(module)
 
-	-- C-specific cleanup (if any)
 	module.environment.compiler_name = nil
 	module.environment.compiler_version = nil
 	module.environment.compiler = nil
@@ -387,7 +349,6 @@ function M.cleanup_c(module)
 	module.environment.optimization = nil
 end
 
--- Create and return the C language module
 local c_module = create_c_module()
 
 return c_module

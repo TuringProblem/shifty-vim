@@ -20,7 +20,6 @@ local utils = require('shifty.utils')
 ---@field language string The language that was used
 ---@field metadata table Additional metadata
 
--- Performance monitoring
 local performance_stats = {
   total_executions = 0,
   successful_executions = 0,
@@ -29,7 +28,6 @@ local performance_stats = {
   average_execution_time = 0
 }
 
--- Update performance statistics
 ---@param language string The language name
 ---@param success boolean Whether execution was successful
 ---@param execution_time number Execution time in milliseconds
@@ -42,7 +40,6 @@ local function update_performance_stats(language, success, execution_time)
     performance_stats.failed_executions = performance_stats.failed_executions + 1
   end
   
-  -- Update language-specific stats
   if not performance_stats.language_stats[language] then
     performance_stats.language_stats[language] = {
       total = 0,
@@ -65,7 +62,6 @@ local function update_performance_stats(language, success, execution_time)
   
   lang_stats.average_time = lang_stats.total_time / lang_stats.total
   
-  -- Update global average
   local total_time = 0
   local total_count = 0
   for _, stats in pairs(performance_stats.language_stats) do
@@ -78,7 +74,6 @@ local function update_performance_stats(language, success, execution_time)
   end
 end
 
--- Execute code using the proxy system
 ---@param context ExecutionContext The execution context
 ---@return ExecutionResult result The execution result
 function M.execute_code(context)
@@ -93,21 +88,18 @@ function M.execute_code(context)
     metadata = {}
   }
   
-  -- Validate context
   if not context.language or not context.code then
     result.error = "Invalid execution context: missing language or code"
     result.output = result.error
     return result
   end
   
-  -- Check if language is available
   if not registry.is_language_available(context.language) then
     result.error = string.format("Language '%s' is not available or not healthy", context.language)
     result.output = result.error
     return result
   end
   
-  -- Get language module
   local language_module = registry.get_language(context.language)
   if not language_module then
     result.error = string.format("Failed to load language module for '%s'", context.language)
@@ -115,7 +107,6 @@ function M.execute_code(context)
     return result
   end
   
-  -- Setup environment if needed
   local env_setup_success = pcall(function()
     return language_module.setup_environment(context.config or {})
   end)
@@ -126,7 +117,6 @@ function M.execute_code(context)
     return result
   end
   
-  -- Execute code with error isolation
   local execution_success, execution_result = pcall(function()
     return language_module.execute_code(context.code, {
       timeout = context.timeout,
@@ -140,13 +130,11 @@ function M.execute_code(context)
   result.execution_time = (end_time - start_time) / 1000000  -- Convert to milliseconds
   
   if execution_success then
-    -- Validate execution result
     if type(execution_result) == "table" then
       result.success = execution_result.success or false
       result.output = execution_result.output or ""
       result.error = execution_result.error
       
-      -- Copy additional metadata
       if execution_result.metadata then
         result.metadata = vim.tbl_extend("force", result.metadata, execution_result.metadata)
       end
@@ -161,10 +149,8 @@ function M.execute_code(context)
     result.output = result.error
   end
   
-  -- Update performance statistics
   update_performance_stats(context.language, result.success, result.execution_time)
   
-  -- Log execution
   local log_level = result.success and "info" or "error"
   utils.log(string.format("Executed %s code - %s (%.2fms)", 
            context.language, result.success and "SUCCESS" or "ERROR", result.execution_time), 
@@ -173,7 +159,6 @@ function M.execute_code(context)
   return result
 end
 
--- Get language capabilities through proxy
 ---@param language_name string The language name
 ---@return table|nil capabilities The language capabilities or nil if not available
 function M.get_language_capabilities(language_name)
@@ -186,14 +171,12 @@ function M.get_language_capabilities(language_name)
     return nil
   end
   
-  -- Add proxy-specific capabilities
   capabilities.proxy_supported = true
   capabilities.performance_stats = performance_stats.language_stats[language_name] or {}
   
   return capabilities
 end
 
--- Get all available languages
 ---@return string[] available_languages List of available language names
 function M.get_available_languages()
   local available = {}
@@ -208,13 +191,11 @@ function M.get_available_languages()
   return available
 end
 
--- Get performance statistics
 ---@return table stats Performance statistics
 function M.get_performance_stats()
   return vim.deepcopy(performance_stats)
 end
 
--- Reset performance statistics
 function M.reset_performance_stats()
   performance_stats = {
     total_executions = 0,
@@ -225,13 +206,11 @@ function M.reset_performance_stats()
   }
 end
 
--- Health check for the proxy system
 ---@return boolean healthy Whether the proxy system is healthy
 function M.health_check()
   local healthy = true
   local issues = {}
   
-  -- Check registry health
   local stats = registry.get_statistics()
   if stats.total_languages == 0 then
     healthy = false
@@ -243,7 +222,6 @@ function M.health_check()
     table.insert(issues, "No healthy languages available")
   end
   
-  -- Check performance stats integrity
   if performance_stats.total_executions < 0 then
     healthy = false
     table.insert(issues, "Invalid performance statistics")
@@ -256,7 +234,6 @@ function M.health_check()
   return healthy
 end
 
--- Get proxy system information
 ---@return table info Proxy system information
 function M.get_system_info()
   local stats = registry.get_statistics()

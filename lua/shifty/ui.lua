@@ -15,12 +15,10 @@ function M.create_floating_window()
 	local row = math.floor((ui.height - height) / 2)
 	local col = math.floor((ui.width - width) / 2)
 
-	-- Create buffer
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
 	vim.api.nvim_buf_set_option(buf, "filetype", "shifty-output")
 
-	-- Window options
 	local win_opts = {
 		relative = "editor",
 		width = width,
@@ -35,10 +33,8 @@ function M.create_floating_window()
 		zindex = opts.zindex,
 	}
 
-	-- Create window
 	local win = vim.api.nvim_open_win(buf, true, win_opts)
 
-	-- Set window options
 	vim.api.nvim_win_set_option(win, "wrap", true)
 	vim.api.nvim_win_set_option(win, "cursorline", false)
 
@@ -47,13 +43,11 @@ function M.create_floating_window()
 		vim.api.nvim_win_set_option(win, "relativenumber", false)
 	end
 
-	-- Set initial content
 	M.set_initial_content(buf)
 
 	return win
 end
 
--- Set initial content in the buffer
 function M.set_initial_content(buf)
 	local lines = {
 		title,
@@ -115,16 +109,13 @@ function M.update_output(win, result, block_identifier)
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	vim.api.nvim_buf_set_option(buf, "modifiable", false)
 
-	-- Auto-scroll to bottom if enabled
 	if config.get("ui.auto_scroll") then
 		vim.api.nvim_win_set_cursor(win, { #lines, 0 })
 	end
 
-	-- Apply syntax highlighting based on result
 	M.apply_output_highlighting(buf, result.success)
 end
 
--- Apply syntax highlighting to output
 function M.apply_output_highlighting(buf, success)
 	if not config.get("ui.syntax_highlighting") then
 		return
@@ -132,8 +123,7 @@ function M.apply_output_highlighting(buf, success)
 
 	local highlight_group = success and config.get("ui.colors.success") or config.get("ui.colors.error")
 
-	-- This is a simplified version - you might want to add more sophisticated highlighting
-	vim.api.nvim_buf_add_highlight(buf, -1, highlight_group, 3, 0, -1) -- Status line
+	vim.api.nvim_buf_add_highlight(buf, -1, highlight_group, 3, 0, -1)
 end
 
 -- Clear output window
@@ -146,11 +136,9 @@ function M.clear_output(win)
 	M.set_initial_content(buf)
 end
 
--- Setup window-specific keymaps
 function M.setup_window_keymaps(win)
 	local buf = vim.api.nvim_win_get_buf(win)
 
-	-- Close window
 	local close_key = config.get("keymaps.close")
 	if close_key then
 		vim.keymap.set("n", close_key, function()
@@ -160,7 +148,6 @@ function M.setup_window_keymaps(win)
 		end, { buffer = buf, desc = "Close Shifty window" })
 	end
 
-	-- Make window moveable (basic implementation)
 	vim.keymap.set("n", "<C-w>h", "<C-w>h", { buffer = buf })
 	vim.keymap.set("n", "<C-w>j", "<C-w>j", { buffer = buf })
 	vim.keymap.set("n", "<C-w>k", "<C-w>k", { buffer = buf })

@@ -1,9 +1,8 @@
 local M = {}
 local utils = require("shifty.utils")
+local detector = require("shifty.detector")
 
--- Language mapping from file extensions to language names
 local FILE_EXTENSION_MAP = {
-    -- Compiled languages
     [".c"] = "c",
     [".h"] = "c", 
     [".cpp"] = "cpp",
@@ -13,7 +12,6 @@ local FILE_EXTENSION_MAP = {
     [".rs"] = "rust",
     [".java"] = "java",
     
-    -- Interpreted languages
     [".py"] = "python",
     [".pyw"] = "python",
     [".js"] = "javascript",
@@ -28,7 +26,6 @@ local FILE_EXTENSION_MAP = {
     [".zsh"] = "bash",
     [".fish"] = "fish",
     
-    -- Configuration files (treat as their respective languages)
     [".json"] = "javascript",
     [".yaml"] = "yaml",
     [".yml"] = "yaml",
@@ -38,7 +35,6 @@ local FILE_EXTENSION_MAP = {
     [".conf"] = "ini",
 }
 
--- Get language from file extension
 ---@param filepath string The file path
 ---@return string|nil language The detected language or nil
 function M.get_language_from_file(filepath)
@@ -54,7 +50,6 @@ function M.get_language_from_file(filepath)
     return nil
 end
 
--- Get language from buffer filetype
 ---@param buf number|nil Buffer number (defaults to current)
 ---@return string|nil language The detected language or nil
 function M.get_language_from_buffer(buf)
@@ -65,7 +60,6 @@ function M.get_language_from_buffer(buf)
         return nil
     end
     
-    -- Map common filetypes to language names
     local filetype_map = {
         c = "c",
         cpp = "cpp", 
@@ -91,7 +85,237 @@ function M.get_language_from_buffer(buf)
     return filetype_map[filetype]
 end
 
--- Extract code from visual selection
+---@param buf number|nil Buffer number (defaults to current)
+---@return string|nil extension The file extension or nil
+function M.get_file_extension_from_buffer(buf)
+    buf = buf or vim.api.nvim_get_current_buf()
+    
+    local filepath = vim.api.nvim_buf_get_name(buf)
+    if not filepath or filepath == "" then
+        return nil
+    end
+    
+    local extension = filepath:match("%.[^%.]+$")
+    return extension and extension:lower() or nil
+end
+
+---@param lines table Array of lines
+---@param cursor_line number Current cursor line (1-based)
+---@return string|nil context_code Extracted context code or nil
+function M.extract_context_block(lines, cursor_line)
+    local line_idx = cursor_line - 1
+    local current_line = lines[line_idx] or ""
+    
+    if current_line:match("^%s*$") then
+        return nil
+    end
+    
+    local function_code = M.extract_function_context(lines, line_idx)
+    if function_code then
+        return function_code
+    end
+    
+    local class_code = M.extract_class_context(lines, line_idx)
+    if class_code then
+        return class_code
+    end
+    
+    local block_code = M.extract_block_context(lines, line_idx)
+    if block_code then
+        return block_code
+    end
+    
+    return current_line
+end
+
+---@param lines table Array of lines
+---@param line_idx number Current line index (0-based)
+---@return string|nil function_code Function code or nil
+function M.extract_function_context(lines, line_idx)
+    local start_line = line_idx
+    local end_line = line_idx
+    
+    for i = line_idx, 0, -1 do
+        local line = lines[i] or ""
+        if line:match("^%s*function%s+") or 
+           line:match("^%s*def%s+") or 
+           line:match("^%s*fn%s+") or
+           line:match("^%s*public%s+static%s+") or
+           line:match("^%s*private%s+") or
+           line:match("^%s*protected%s+") then
+            start_line = i
+            break
+        end
+    end
+    
+    local brace_count = 0
+    local found_start = false
+    
+    for i = start_line, #lines - 1 do
+        local line = lines[i] or ""
+        
+        for char in line:gmatch("[{}]") do
+            if char == "{" then
+                brace_count = brace_count + 1
+                found_start = true
+            elseif char == "}" then
+                brace_count = brace_count - 1
+            end
+        end
+        
+        if not found_start and line:match("^%s*def%s+") then
+            for j = i + 1, #lines - 1 do
+                local next_line = lines[j] or ""
+                if next_line:match("^%s*def%s+") or next_line:match("^%s*class%s+") or next_line:match("^%s*$") then
+                    end_line = j - 1
+                    break
+                end
+                end_line = j
+            end
+            break
+        end
+        
+        if found_start and brace_count == 0 then
+            end_line = i
+            break
+        end
+    end
+    
+    if end_line >= start_line then
+        local function_lines = {}
+        for i = start_line, end_line do
+            table.insert(function_lines, lines[i] or "")
+        end
+        return table.concat(function_lines, "\n")
+    end
+    
+    return nil
+end
+
+---@param lines table Array of lines
+---@param line_idx number Current line index (0-based)
+---@return string|nil class_code Class code or nil
+function M.extract_class_context(lines, line_idx)
+    local start_line = line_idx
+    local end_line = line_idx
+    
+    for i = line_idx, 0, -1 do
+        local line = lines[i] or ""
+        if line:match("^%s*class%s+") then
+            start_line = i
+            break
+        end
+    end
+    
+    local brace_count = 0
+    local found_start = false
+    
+    for i = start_line, #lines - 1 do
+        local line = lines[i] or ""
+        
+        for char in line:gmatch("[{}]") do
+            if char == "{" then
+                brace_count = brace_count + 1
+                found_start = true
+            elseif char == "}" then
+                brace_count = brace_count - 1
+            end
+        end
+        
+        if not found_start and line:match("^%s*class%s+") then
+            for j = i + 1, #lines - 1 do
+                local next_line = lines[j] or ""
+                if next_line:match("^%s*class%s+") or next_line:match("^%s*$") then
+                    end_line = j - 1
+                    break
+                end
+                end_line = j
+            end
+            break
+        end
+        
+        if found_start and brace_count == 0 then
+            end_line = i
+            break
+        end
+    end
+    
+    if end_line >= start_line then
+        local class_lines = {}
+        for i = start_line, end_line do
+            table.insert(class_lines, lines[i] or "")
+        end
+        return table.concat(class_lines, "\n")
+    end
+    
+    return nil
+end
+
+---@param lines table Array of lines
+---@param line_idx number Current line index (0-based)
+---@return string|nil block_code Block code or nil
+function M.extract_block_context(lines, line_idx)
+    local start_line = line_idx
+    local end_line = line_idx
+    
+    for i = line_idx, 0, -1 do
+        local line = lines[i] or ""
+        if line:match("^%s*if%s+") or 
+           line:match("^%s*for%s+") or 
+           line:match("^%s*while%s+") or
+           line:match("^%s*try%s*%{") or
+           line:match("^%s*try%s*:") then
+            start_line = i
+            break
+        end
+    end
+    
+    local brace_count = 0
+    local found_start = false
+    
+    for i = start_line, #lines - 1 do
+        local line = lines[i] or ""
+        
+        for char in line:gmatch("[{}]") do
+            if char == "{" then
+                brace_count = brace_count + 1
+                found_start = true
+            elseif char == "}" then
+                brace_count = brace_count - 1
+            end
+        end
+        
+        if not found_start and (line:match("^%s*if%s+") or line:match("^%s*for%s+") or line:match("^%s*while%s+")) then
+            local base_indent = line:match("^(%s*)")
+            for j = i + 1, #lines - 1 do
+                local next_line = lines[j] or ""
+                local next_indent = next_line:match("^(%s*)")
+                if next_indent and #next_indent <= #base_indent and next_line:match("%S") then
+                    end_line = j - 1
+                    break
+                end
+                end_line = j
+            end
+            break
+        end
+        
+        if found_start and brace_count == 0 then
+            end_line = i
+            break
+        end
+    end
+    
+    if end_line >= start_line then
+        local block_lines = {}
+        for i = start_line, end_line do
+            table.insert(block_lines, lines[i] or "")
+        end
+        return table.concat(block_lines, "\n")
+    end
+    
+    return nil
+end
+
 ---@param buf number|nil Buffer number (defaults to current)
 ---@return table|nil code_info Code information or nil if no selection
 function M.extract_selected_code(buf)
@@ -109,32 +333,44 @@ function M.extract_selected_code(buf)
         return nil
     end
     
-    -- Convert to 0-based indexing
     local start_line = start_pos[2] - 1
     local end_line = end_pos[2] - 1
     
     local lines = vim.api.nvim_buf_get_lines(buf, start_line, end_line + 1, false)
     local code = table.concat(lines, "\n")
     
-    -- Detect language from buffer context
-    local language = M.get_language_from_buffer(buf)
-    if not language then
-        -- Fallback to file extension
-        local filepath = vim.api.nvim_buf_get_name(buf)
-        language = M.get_language_from_file(filepath)
+    local context = {
+        file_extension = M.get_file_extension_from_buffer(buf),
+        buffer_filetype = M.get_language_from_buffer(buf)
+    }
+    
+    local detection_result = detector.detect_language(code, context)
+    local language = detection_result.language
+    local confidence = detection_result.confidence
+    
+    utils.log(string.format("Selected code detection: %s (%.1f%% confidence)", language, confidence), "info")
+    
+    if not detector.is_confidence_sufficient(confidence) and #detection_result.alternatives > 0 then
+        local alt_str = ""
+        for _, alt in ipairs(detection_result.alternatives) do
+            alt_str = alt_str .. string.format("%s(%.1f%%) ", alt.language, alt.confidence)
+        end
+        utils.log("Low confidence detection. Alternatives: " .. alt_str, "warn")
     end
     
     return {
         code = code,
-        language = language or "lua", -- Default fallback
-        start_line = start_line + 1, -- Convert back to 1-based for display
+        language = language,
+        confidence = confidence,
+        alternatives = detection_result.alternatives,
+        start_line = start_line + 1,
         end_line = end_line + 1,
         source = "selection",
-        mode = mode
+        mode = mode,
+        detection_analysis = detection_result.analysis
     }
 end
 
--- Smart code extraction: tries selection first, then code blocks
 ---@param buf number|nil Buffer number (defaults to current)
 ---@param cursor_line number|nil Cursor line (defaults to current)
 ---@return table|nil code_info Code information or nil
@@ -142,13 +378,11 @@ function M.extract_code_smart(buf, cursor_line)
     buf = buf or vim.api.nvim_get_current_buf()
     cursor_line = cursor_line or vim.api.nvim_win_get_cursor(0)[1]
     
-    -- First, try to extract from visual selection
     local selected_code = M.extract_selected_code(buf)
     if selected_code then
         return selected_code
     end
     
-    -- Fallback to code block extraction
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     local code_block = M.extract_code_block_at_cursor(lines, cursor_line)
     
@@ -157,39 +391,46 @@ function M.extract_code_smart(buf, cursor_line)
         return code_block
     end
     
-    -- Last resort: extract current line or function
     return M.extract_context_code(buf, cursor_line)
 end
 
--- Extract code from current context (line, function, etc.)
 ---@param buf number Buffer number
 ---@param cursor_line number Current cursor line
 ---@return table|nil code_info Code information or nil
 function M.extract_context_code(buf, cursor_line)
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    local language = M.get_language_from_buffer(buf) or M.get_language_from_file(vim.api.nvim_buf_get_name(buf))
     
-    if not language then
-        return nil
-    end
+    local context = {
+        file_extension = M.get_file_extension_from_buffer(buf),
+        buffer_filetype = M.get_language_from_buffer(buf)
+    }
     
-    -- For now, extract current line
-    -- TODO: Implement function extraction based on language
     local current_line = lines[cursor_line - 1] or ""
     if current_line:match("^%s*$") then
         return nil
     end
     
+    local context_code = M.extract_context_block(lines, cursor_line)
+    local code = context_code or current_line
+    
+    local detection_result = detector.detect_language(code, context)
+    local language = detection_result.language
+    local confidence = detection_result.confidence
+    
+    utils.log(string.format("Context code detection: %s (%.1f%% confidence)", language, confidence), "info")
+    
     return {
-        code = current_line,
+        code = code,
         language = language,
+        confidence = confidence,
+        alternatives = detection_result.alternatives,
         start_line = cursor_line,
         end_line = cursor_line,
-        source = "context_line"
+        source = "context_line",
+        detection_analysis = detection_result.analysis
     }
 end
 
--- Extract code block at cursor position
 function M.extract_code_block_at_cursor(lines, cursor_line)
 	local start_line, end_line = M.find_code_block_bounds(lines, cursor_line)
 
@@ -221,7 +462,6 @@ function M.find_code_block_bounds(lines, cursor_line)
 	local start_line = nil
 	local end_line = nil
 
-	-- Search backward for opening ```
 	for i = cursor_line, 1, -1 do
 		if lines[i] and lines[i]:match("^```") then
 			start_line = i
@@ -233,7 +473,6 @@ function M.find_code_block_bounds(lines, cursor_line)
 		return nil, nil
 	end
 
-	-- Search forward for closing ```
 	for i = start_line + 1, #lines do
 		if lines[i] and lines[i]:match("^```%s*$") then
 			end_line = i
@@ -253,22 +492,19 @@ function M.parse_opening_line(line)
 		return nil, nil
 	end
 
-	-- Standard markdown code fence: ```language
 	local language = line:match("^```%s*(%w+)")
 
 	if language then
 		return language:lower(), nil
 	end
 
-	-- Plain ``` without language - assume lua for backward compatibility
 	if line:match("^```%s*$") then
 		return "lua", nil
 	end
 
-	return nil, nil -- Not a valid code block
+	return nil, nil
 end
 
--- Find all code blocks in buffer
 function M.find_all_code_blocks(lines)
 	local blocks = {}
 	local i = 1
@@ -278,7 +514,6 @@ function M.find_all_code_blocks(lines)
 			local start_line = i
 			local language, name = M.parse_opening_line(lines[i])
 
-			-- Find closing ```
 			local end_line = nil
 			for j = i + 1, #lines do
 				if lines[j] and lines[j]:match("^```%s*$") then
