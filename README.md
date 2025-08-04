@@ -20,9 +20,15 @@
 
 > A powerful multi-language REPL (Read-Eval-Print Loop) plugin for Neovim that allows you to execute code blocks in various programming languages directly from your editor.
 
+<div align="center">
+  
 ## 📖 Table of Contents
 
+</div>
+
+
 - [Current Language Support](#-current-language-support)
+- [How It Works](#how-it-works)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
@@ -36,6 +42,8 @@
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
+
+
 
 <div align="center">
 
@@ -51,10 +59,27 @@
 
 </div>
 
+<div align="center">
+
+## How It Works
+
+![Screen Recording 2025-08-04 at 1 18 57 AM](https://github.com/user-attachments/assets/58477f44-349a-476a-a383-a86f05e97ab1)
+
+
+--------------
+
+
+![Screen Recording 2025-08-04 at 12 20 16 AM](https://github.com/user-attachments/assets/760ba188-7685-485b-aa57-e2af46bc9e09)
+
+
+
+</div>
+
+
+
 ## Features
 
 - 🚀 **Multi-language support**: Execute code in Python, JavaScript, Lua, Rust, Java, C, and more
-- 🎯 **Smart code block detection**: Automatically detects and executes code blocks at cursor position
 - 📊 **Real-time output**: View execution results in a floating window
 - 🔄 **History tracking**: Keep track of all executed code and results
 - ⚡ **Fast execution**: Optimized for quick code testing and experimentation
