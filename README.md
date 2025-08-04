@@ -5,8 +5,8 @@
 # Shifty - Multi-Language REPL for Neovim
 
 ![Static Badge](https://img.shields.io/badge/SHIFTY-VIM-%23632CA6?style=for-the-badge&logo=lua&logoColor=%23632CA6&labelColor=%23fff)
-![GitHub stars](https://img.shields.io/github/stars/TuringProblem/shifty-vim?style=for-the-badge&logo=github)
-![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=for-the-badge&logo=gnu)
+![GitHub stars](https://img.shields.io/github/stars/TuringProblem/shifty-vim?style=for-the-badge&logo=github&logoColor=%23632CA6&labelColor=%23fff&color=%23632CA6)
+![License](https://img.shields.io/badge/License-GPL--3.0-%23632CA6?style=for-the-badge&logo=gnu&logoColor=%23632CA6&labelColor=%23fff)
 ![Shell](https://img.shields.io/badge/Shell-121011?style=for-the-badge&logo=gnu-bash&logoColor=white)
 
 </div>
