@@ -11,6 +11,13 @@
 
 </div>
 
+<div align="center"> 
+  
+  ![lq](https://github.com/user-attachments/assets/706158a8-b3dd-4179-82f2-3f408fcc508b)
+  
+</div>
+
+
 > A powerful multi-language REPL (Read-Eval-Print Loop) plugin for Neovim that allows you to execute code blocks in various programming languages directly from your editor.
 
 ## 📖 Table of Contents
@@ -43,8 +50,6 @@
 ![Lua](https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
 
 </div>
-
-A powerful multi-language REPL (Read-Eval-Print Loop) plugin for Neovim that allows you to execute code blocks in various programming languages directly from your editor.
 
 ## Features
 
