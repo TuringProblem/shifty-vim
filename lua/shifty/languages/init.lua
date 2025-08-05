@@ -80,10 +80,12 @@ end
 function M.load_language_module(language_name, base_path, config)
 	local module_path = base_path .. "." .. language_name
 
+  --[[
 	utils.log(
 		string.format("Attempting to load language module '%s' from path '%s'", language_name, module_path),
 		"info"
 	)
+  ]]
 
 	local success, module = pcall(require, module_path)
 	if not success then
@@ -105,7 +107,9 @@ function M.load_language_module(language_name, base_path, config)
 		return nil
 	end
 
+  --[[
 	utils.log(string.format("Successfully registered language '%s'", language_name), "info")
+  ]]
 
 	return {
 		name = language_name,
