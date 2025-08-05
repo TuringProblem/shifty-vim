@@ -75,7 +75,9 @@ function M.register_language(language_name, module)
   -- Clear health cache for this language
   health_cache[language_name] = nil
   
+  --[[
   vim.notify(string.format("Shifty: Registered language '%s' v%s", language_name, module.metadata.version), vim.log.levels.INFO)
+  ]]
   return true
 end
 

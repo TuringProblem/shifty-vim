@@ -18,7 +18,9 @@ function M.discover_languages(config)
 	config = config or {}
 	discovered_languages = {}
 
+  --[[
 	utils.log("Starting language discovery...", "info")
+  ]]
 
 	-- Search in language paths
 	for _, path in ipairs(language_paths) do
@@ -93,14 +95,15 @@ function M.load_language_module(language_name, base_path, config)
 		return nil
 	end
 
+  --[[
 	utils.log(string.format("Successfully loaded language module '%s'", language_name), "info")
+  ]]
 
 	if not M.validate_language_module(module, language_name) then
 		utils.log(string.format("Invalid language module structure for '%s'", language_name), "error")
 		return nil
 	end
 
-	-- Register the language
 	local registered = registry.register_language(language_name, module)
 	if not registered then
 		utils.log(string.format("Failed to register language '%s'", language_name), "error")
@@ -124,12 +127,10 @@ end
 ---@param language_name string The language name
 ---@return boolean valid Whether the module is valid
 function M.validate_language_module(module, language_name)
-	-- Check if module is a table
 	if type(module) ~= "table" then
 		return false
 	end
 
-	-- Check required methods
 	local required_methods = { "execute_code", "setup_environment", "get_capabilities", "health_check", "cleanup" }
 	for _, method in ipairs(required_methods) do
 		if type(module[method]) ~= "function" then
@@ -137,7 +138,6 @@ function M.validate_language_module(module, language_name)
 		end
 	end
 
-	-- Check metadata
 	if not module.metadata or type(module.metadata) ~= "table" then
 		return false
 	end

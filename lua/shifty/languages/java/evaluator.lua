@@ -11,27 +11,84 @@ local EXECUTION_STRATEGIES = {
     COMPILED = "compiled"        -- Compile and run
 }
 
+local ACCESS_MODIFIERS = { 
+  "public", 
+  "protected", 
+  "private" 
+}
+
+local NON_ACCESS_MODIFIERS = { 
+  "static", 
+  "final", 
+  "synchronized", 
+  "volatile", 
+  "transient", 
+  "native", 
+  "strictfp" 
+}
+
+local types = {
+  "void",
+  "boolean",
+  "byte",
+  "char",
+  "short",
+  "int",
+  "long",
+  "float",
+  "double",
+  "String",
+  "Object",
+  "Class",
+  "Enum",
+  "Annotation",
+  "Map",
+  "List",
+  "Set",
+  "Array",
+  "Date",
+  "Calendar",
+  "UUID",
+  "Pattern",
+  "Number",
+  "Math",
+  "Random",
+  "Thread",
+  "Runnable",
+  "ThreadLocal",
+  "Atomic",
+  "Collection",
+  "Iterator",
+  "Iterable",
+  "Stream",
+  "Optional",
+  "Supplier",
+  "Function",
+  "Consumer",
+  "Predicate",
+  "BiConsumer",
+  "BiPredicate",
+}
+
+
+
 -- Code pattern matchers
 local patterns = {
-    -- Complete program patterns
     complete_program = {
         pattern = "public%s+class%s+%w+%s*{.*public%s+static%s+void%s+main%s*%(.*%)%s*{",
         strategy = EXECUTION_STRATEGIES.DIRECT
     },
     
-    -- Statement patterns
     statements = {
         pattern = "^%s*[^%s]+.*;%s*$",
         strategy = EXECUTION_STRATEGIES.TEMPLATE
     },
     
-    -- Expression patterns
     expressions = {
         pattern = "^%s*[^;{}]+%s*$",
         strategy = EXECUTION_STRATEGIES.TEMPLATE
     },
     
-    -- Class definition patterns
     class_definition = {
         pattern = "public%s+class%s+%w+%s*{",
         strategy = EXECUTION_STRATEGIES.TEMPLATE
