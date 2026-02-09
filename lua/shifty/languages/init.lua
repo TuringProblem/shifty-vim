@@ -37,7 +37,7 @@ function M.discover_languages(config)
     end
   end
 
-  utils.log(string.format("Discovered %d language modules", #discovered_languages), "info")
+  -- utils.log(string.format("Discovered %d language modules", #discovered_languages), "info")
   return discovered_languages
 end
 
@@ -162,7 +162,7 @@ end
 function M.auto_register_builtin_languages(config)
   config = config or {}
 
-  utils.log("Auto-registering built-in languages...", "info")
+  -- utils.log("Auto-registering built-in languages...", "info")
 
   -- Built-in languages that should always be available
   local builtin_languages = {
@@ -235,9 +235,6 @@ end
 function M.init(config)
   config = config or {}
 
-  utils.log("Initializing language discovery system...", "info")
-
-  -- Discover languages
   M.discover_languages(config)
 
   -- Auto-register built-in languages

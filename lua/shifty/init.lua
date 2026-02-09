@@ -66,7 +66,7 @@ function M.setup(opts)
   end
 
   state.initialized = true
-  utils.log("Shifty initialized successfully", "info")
+  -- utils.log("Shifty initialized successfully", "info")
 end
 
 ---@return void
