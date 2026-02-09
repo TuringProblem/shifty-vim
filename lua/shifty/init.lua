@@ -21,11 +21,11 @@ local state = {
 function M.setup(opts)
   opts = opts or {}
   config.setup(opts)
-  
+
   languages.init(opts.languages or {})
-  
+
   invisible_ui.init()
-  
+
   vim.api.nvim_create_user_command('ShiftyToggle', M.toggle, {})
   vim.api.nvim_create_user_command('ShiftyRun', M.run_current_block, {})
   vim.api.nvim_create_user_command('ShiftySmart', M.run_smart, {})
@@ -36,35 +36,35 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('ShiftyInfo', M.show_info, {})
   vim.api.nvim_create_user_command('ShiftyDetect', M.detect_language, {})
   vim.api.nvim_create_user_command('ShiftyMagic', M.run_magic_execution, {})
-  
+
   if config.options.keymaps.toggle then
     vim.keymap.set('n', config.options.keymaps.toggle, M.toggle, { desc = 'Toggle Shifty window' })
   end
-  
+
   if config.options.keymaps.run then
     vim.keymap.set('n', config.options.keymaps.run, M.run_current_block, { desc = 'Run current code block' })
   end
-  
+
   if config.options.keymaps.smart then
     vim.keymap.set('n', config.options.keymaps.smart, M.run_smart, { desc = 'Smart execute (selection/block/context)' })
   end
-  
+
   if config.options.keymaps.selection then
     vim.keymap.set('v', config.options.keymaps.selection, M.run_selection, { desc = 'Execute selected code' })
   end
-  
+
   if config.options.keymaps.context then
     vim.keymap.set('n', config.options.keymaps.context, M.run_context, { desc = 'Execute current line/context' })
   end
-  
+
   if config.options.keymaps.clear then
     vim.keymap.set('n', config.options.keymaps.clear, M.clear_output, { desc = 'Clear Shifty output' })
   end
-  
+
   if config.options.keymaps.close then
     vim.keymap.set('n', config.options.keymaps.close, M.close, { desc = 'Close Shifty window' })
   end
-  
+
   state.initialized = true
   utils.log("Shifty initialized successfully", "info")
 end
@@ -75,7 +75,7 @@ function M.toggle()
     utils.log("Shifty not initialized. Run :lua require('shifty').setup()", "error")
     return
   end
-  
+
   if state.floating_win and vim.api.nvim_win_is_valid(state.floating_win) then
     M.close()
   else
@@ -89,7 +89,6 @@ function M.open()
   ui.setup_window_keymaps(state.floating_win)
   utils.log("Shifty window opened", "info")
 end
-
 
 ---@return void
 function M.close()
@@ -105,14 +104,14 @@ function M.run_current_block()
   local current_buf = vim.api.nvim_get_current_buf()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local lines = vim.api.nvim_buf_get_lines(current_buf, 0, -1, false)
-  
+
   local code_block = parser.extract_code_block_at_cursor(lines, cursor_pos[1])
-  
+
   if not code_block then
     utils.log("No code block found at cursor position", "warn")
     return
   end
-  
+
   M.execute_code(code_block.code, code_block)
 end
 
@@ -120,14 +119,14 @@ end
 function M.run_smart()
   local current_buf = vim.api.nvim_get_current_buf()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  
+
   local code_info = parser.extract_code_smart(current_buf, cursor_pos[1])
-  
+
   if not code_info then
     utils.log("No code found to execute. Try selecting code or placing cursor in a code block.", "warn")
     return
   end
-  
+
   M.execute_code(code_info.code, code_info)
 end
 
@@ -135,12 +134,12 @@ end
 function M.run_selection()
   local current_buf = vim.api.nvim_get_current_buf()
   local code_info = parser.extract_selected_code(current_buf)
-  
+
   if not code_info then
     utils.log("No text selected. Select code in visual mode first.", "warn")
     return
   end
-  
+
   M.execute_code(code_info.code, code_info)
 end
 
@@ -148,14 +147,14 @@ end
 function M.run_context()
   local current_buf = vim.api.nvim_get_current_buf()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  
+
   local code_info = parser.extract_context_code(current_buf, cursor_pos[1])
-  
+
   if not code_info then
     utils.log("No executable code found at cursor position.", "warn")
     return
   end
-  
+
   M.execute_code(code_info.code, code_info)
 end
 
@@ -166,10 +165,10 @@ function M.execute_code(code, block_info)
   if not state.floating_win or not vim.api.nvim_win_is_valid(state.floating_win) then
     M.open()
   end
-  
+
   local language = block_info.language or "lua"
   local source = block_info.source or "unknown"
-  
+
   local block_name
   if source == "selection" then
     block_name = string.format("%s selection (lines %d-%d)", language, block_info.start_line, block_info.end_line)
@@ -180,7 +179,7 @@ function M.execute_code(code, block_info)
   else
     block_name = string.format("%s code (line %d)", language, block_info.start_line or 0)
   end
-  
+
   local result = proxy.execute_code({
     language = language,
     code = code,
@@ -190,7 +189,7 @@ function M.execute_code(code, block_info)
     capture_output = config.get("execution.capture_print"),
     safe_mode = true
   })
-  
+
   table.insert(state.history, {
     code = code,
     result = result,
@@ -199,13 +198,13 @@ function M.execute_code(code, block_info)
     language = language,
     source = source
   })
-  
+
   state.current_output = result.output
   ui.update_output(state.floating_win, result, block_name)
-  
-  utils.log(string.format("Executed %s %s at line %d - %s", 
-           language, source, block_info.start_line or 0, result.success and "SUCCESS" or "ERROR"), 
-           result.success and "info" or "error")
+
+  utils.log(string.format("Executed %s %s at line %d - %s",
+      language, source, block_info.start_line or 0, result.success and "SUCCESS" or "ERROR"),
+    result.success and "info" or "error")
 end
 
 ---@return void
@@ -235,25 +234,25 @@ function M.run_magic_execution()
     utils.log("Shifty not initialized. Run :lua require('shifty').setup()", "error")
     return
   end
-  
+
   local current_buf = vim.api.nvim_get_current_buf()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  
+
   -- Try to extract code with intelligent detection
   local code_info = parser.extract_code_smart(current_buf, cursor_pos[1])
-  
+
   if not code_info then
     utils.log("No code found to execute. Try selecting code or placing cursor in a code block.", "warn")
     return
   end
-  
+
   -- Check if we have sufficient confidence for automatic execution
   if code_info.confidence and not detector.is_confidence_sufficient(code_info.confidence) then
     -- Show language selection dialog for low confidence
     M.show_language_selection_dialog(code_info)
     return
   end
-  
+
   -- Execute with invisible processing
   M.execute_code_magically(code_info)
 end
@@ -279,10 +278,10 @@ function M.execute_code_magically(code_info)
       capture_output = config.get("execution.capture_print"),
       safe_mode = true
     })
-    
+
     return result
   end
-  
+
   -- Process through invisible window system
   local result = invisible_ui.process_code_invisibly(
     code_info.code,
@@ -294,23 +293,23 @@ function M.execute_code_magically(code_info)
       alternatives = code_info.alternatives
     }
   )
-  
+
   if not result then
     utils.log("Failed to execute code through invisible processing", "error")
     return
   end
-  
+
   -- Update UI with results
   if not state.floating_win or not vim.api.nvim_win_is_valid(state.floating_win) then
     M.open()
   end
-  
+
   -- Create descriptive block name
   local confidence_level = detector.get_confidence_level(code_info.confidence or 0)
-  local block_name = string.format("%s %s (%.1f%% confidence, %s)", 
-                   code_info.language, code_info.source, 
-                   code_info.confidence or 0, confidence_level)
-  
+  local block_name = string.format("%s %s (%.1f%% confidence, %s)",
+    code_info.language, code_info.source,
+    code_info.confidence or 0, confidence_level)
+
   -- Add to history
   table.insert(state.history, {
     code = code_info.code,
@@ -321,14 +320,14 @@ function M.execute_code_magically(code_info)
     source = code_info.source,
     confidence = code_info.confidence
   })
-  
+
   state.current_output = result.output
   ui.update_output(state.floating_win, result, block_name)
-  
-  utils.log(string.format("Magic execution: %s %s (%.1f%% confidence) - %s", 
-           code_info.language, code_info.source, code_info.confidence or 0,
-           result.success and "SUCCESS" or "ERROR"), 
-           result.success and "info" or "error")
+
+  utils.log(string.format("Magic execution: %s %s (%.1f%% confidence) - %s",
+      code_info.language, code_info.source, code_info.confidence or 0,
+      result.success and "SUCCESS" or "ERROR"),
+    result.success and "info" or "error")
 end
 
 -- Show language selection dialog for low confidence detection
@@ -340,7 +339,7 @@ function M.show_language_selection_dialog(code_info)
     language = code_info.language,
     confidence = code_info.confidence
   })
-  
+
   local lines = {
     "🔍 Language Detection - Low Confidence",
     "=" .. string.rep("=", 40),
@@ -348,25 +347,25 @@ function M.show_language_selection_dialog(code_info)
     "Detected languages (please select one):",
     ""
   }
-  
+
   for i, alt in ipairs(alternatives) do
     local confidence_level = detector.get_confidence_level(alt.confidence)
-    table.insert(lines, string.format("%d. %s (%.1f%% - %s)", 
-                 i, alt.language, alt.confidence, confidence_level))
+    table.insert(lines, string.format("%d. %s (%.1f%% - %s)",
+      i, alt.language, alt.confidence, confidence_level))
   end
-  
+
   table.insert(lines, "")
   table.insert(lines, "Press number to select, or <Esc> to cancel")
-  
+
   -- Create selection window
   local width = 50
   local height = #lines + 2
-  
+
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-  
+
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
     width = width,
@@ -378,22 +377,22 @@ function M.show_language_selection_dialog(code_info)
     title = ' Language Selection ',
     title_pos = 'center'
   })
-  
+
   -- Set up keymaps for selection
   for i = 1, #alternatives do
     vim.keymap.set('n', tostring(i), function()
       local selected_language = alternatives[i].language
       vim.api.nvim_win_close(win, true)
-      
+
       -- Update code_info with selected language
       code_info.language = selected_language
       code_info.confidence = alternatives[i].confidence
-      
+
       -- Execute with selected language
       M.execute_code_magically(code_info)
     end, { buffer = buf, noremap = true })
   end
-  
+
   -- Close on escape
   vim.keymap.set('n', '<Esc>', function()
     vim.api.nvim_win_close(win, true)
@@ -407,25 +406,25 @@ function M.detect_language()
     utils.log("Shifty not initialized. Run :lua require('shifty').setup()", "error")
     return
   end
-  
+
   local current_buf = vim.api.nvim_get_current_buf()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  
+
   -- Extract code for detection
   local code_info = parser.extract_code_smart(current_buf, cursor_pos[1])
-  
+
   if not code_info then
     utils.log("No code found to detect language.", "warn")
     return
   end
-  
+
   -- Show detection results
   local lines = {
     "🔍 Language Detection Results",
     "=" .. string.rep("=", 40),
     "",
-    string.format("Primary Detection: %s (%.1f%% confidence)", 
-                 code_info.language, code_info.confidence or 0),
+    string.format("Primary Detection: %s (%.1f%% confidence)",
+      code_info.language, code_info.confidence or 0),
     "",
     "Detection Analysis:",
     string.format("  Total Lines: %d", code_info.detection_analysis.total_lines),
@@ -433,7 +432,7 @@ function M.detect_language()
     string.format("  Context Used: %s", code_info.detection_analysis.context_used and "Yes" or "No"),
     ""
   }
-  
+
   if code_info.alternatives and #code_info.alternatives > 0 then
     table.insert(lines, "Alternative Languages:")
     for _, alt in ipairs(code_info.alternatives) do
@@ -441,22 +440,22 @@ function M.detect_language()
     end
     table.insert(lines, "")
   end
-  
+
   table.insert(lines, "Supported Languages:")
   local supported = detector.get_supported_languages()
   for _, lang in ipairs(supported) do
     table.insert(lines, string.format("  • %s", lang))
   end
-  
+
   -- Create info window
   local width = 60
   local height = #lines + 2
-  
+
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-  
+
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
     width = width,
@@ -468,12 +467,12 @@ function M.detect_language()
     title = ' Language Detection ',
     title_pos = 'center'
   })
-  
+
   -- Close on any key
   vim.keymap.set('n', '<Esc>', function()
     vim.api.nvim_win_close(win, true)
   end, { buffer = buf, noremap = true })
-  
+
   vim.keymap.set('n', 'q', function()
     vim.api.nvim_win_close(win, true)
   end, { buffer = buf, noremap = true })
@@ -484,7 +483,7 @@ function M.show_info()
   local system_info = proxy.get_system_info()
   local discovery_stats = languages.get_discovery_stats()
   local invisible_stats = invisible_ui.get_invisible_window_stats()
-  
+
   local info_lines = {
     "🎯 Shifty Multi-Language REPL System",
     "=" .. string.rep("=", 40),
@@ -514,21 +513,21 @@ function M.show_info()
     "",
     "🔍 Available Languages:",
   }
-  
+
   for _, language in ipairs(system_info.available_languages) do
     local capabilities = proxy.get_language_capabilities(language)
     local status = capabilities and "✓" or "✗"
     table.insert(info_lines, string.format("  %s %s", status, language))
   end
-  
+
   local width = 60
   local height = #info_lines + 2
-  
+
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, info_lines)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-  
+
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
     width = width,
@@ -540,14 +539,15 @@ function M.show_info()
     title = ' Shifty Info ',
     title_pos = 'center'
   })
-  
+
   vim.keymap.set('n', '<Esc>', function()
     vim.api.nvim_win_close(win, true)
   end, { buffer = buf, noremap = true })
-  
+
   vim.keymap.set('n', 'q', function()
     vim.api.nvim_win_close(win, true)
   end, { buffer = buf, noremap = true })
 end
 
-return M 
+return M
+
